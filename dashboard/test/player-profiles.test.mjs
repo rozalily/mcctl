@@ -38,7 +38,7 @@ test("tracks modern active session starts", () => {
     ].join("\n"),
   );
   assert.equal(sessions.has("alpha"), false);
-  assert.equal(sessions.get("beta"), "2026-11-14T04:01:00.000Z");
+  assert.equal(sessions.get("beta"), new Date(2026, 10, 13, 20, 1, 0, 0).toISOString());
 });
 
 test("reads Essentials online session timestamps", () => {
