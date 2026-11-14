@@ -29,10 +29,12 @@ mods or modpacks.
 - Linux with systemd
 - Node.js 22 or newer
 - Bash, tmux, and sudo
-- A `minecraft` system account
 - Java runtimes appropriate for the Minecraft versions being hosted
 
-The installer validates existing prerequisites but never installs packages.
+The installer creates a locked `minecraft` system account and matching group
+when absent. If the account already exists, it prints its UID, GID, home, and
+shell, warns that it will be reused unchanged, and continues. The installer
+validates other prerequisites but never installs packages.
 
 ## Install
 
