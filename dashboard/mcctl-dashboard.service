@@ -1,0 +1,23 @@
+[Unit]
+Description=mcctl Minecraft status dashboard
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=minecraft
+Group=minecraft
+WorkingDirectory=/usr/local/libexec/mcctl-dashboard
+EnvironmentFile=-/etc/default/mcctl-dashboard
+ExecStart=/usr/local/libexec/mcctl-dashboard/run
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/mcctl-dashboard
+
+[Install]
+WantedBy=multi-user.target

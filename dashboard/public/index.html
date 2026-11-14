@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ee3d43" />
+    <title>Minecraft server status</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="vendor/skinview3d/skinview3d.bundle.js"></script>
+    <script src="app.js" type="module"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand">
+          <img class="brand__icon" src="favicon.svg" alt="" width="48" height="48" />
+          <div>
+            <h1>Minecraft servers</h1>
+            <p>Live instance status</p>
+          </div>
+        </div>
+        <div class="topbar__actions">
+          <span id="updated-at" class="updated-at">Connecting…</span>
+          <button id="refresh" class="icon-button" type="button" title="Refresh status" aria-label="Refresh status">↻</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" aria-labelledby="servers-heading">
+        <div class="section__heading">
+          <div>
+            <p class="eyebrow">Live status</p>
+            <h2 id="servers-heading">Managed by mcctl</h2>
+          </div>
+        </div>
+        <div id="server-list" class="server-list" aria-live="polite">
+          <div class="loading-line">Loading server status…</div>
+        </div>
+      </section>
+
+      <p id="error-message" class="error-message" role="alert" hidden></p>
+    </main>
+
+    <footer>
+      <span>Read-only status</span>
+      <span aria-hidden="true">·</span>
+      <span>Refreshes every 10 seconds</span>
+    </footer>
+  </body>
+</html>

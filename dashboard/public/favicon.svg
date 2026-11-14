@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Minecraft server status">
+  <rect width="64" height="64" rx="8" fill="#123c2d"/>
+  <path fill="#d5a840" d="M10 15h44v14H10z"/>
+  <path fill="#4c8f55" d="M10 29h44v25H10z"/>
+  <path fill="#2e693f" d="M10 29h12v10H10zm22 0h9v13h-9zm9 13h13v12H41zM22 39h10v15H22z"/>
+  <path fill="#f4f7f5" d="M20 20h7v5h-7zm17 0h7v5h-7z"/>
+</svg>

@@ -10,7 +10,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test test/*.test.mjs && npm --prefix dashboard test"
   },
   "engines": {
     "node": ">=22"

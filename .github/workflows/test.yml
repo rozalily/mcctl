@@ -16,5 +16,6 @@ jobs:
         with:
           node-version: 24
       - run: npm test
+      - run: npm audit --prefix dashboard --omit=dev
       - name: Check shell syntax
-        run: bash -n mcctl install.sh completions/mcctl.bash minecraft-console minecraft-launch minecraft-stop minecraft-supervisor
+        run: bash -n mcctl install.sh dashboard/run completions/mcctl.bash minecraft-console minecraft-launch minecraft-stop minecraft-supervisor

@@ -1,0 +1,23 @@
+{
+  "name": "@mcctl/dashboard",
+  "version": "0.1.0",
+  "description": "Optional read-only dashboard for mcctl-managed Minecraft servers",
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rozalily/mcctl.git",
+    "directory": "dashboard"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "skinview3d": "3.4.2"
+  }
+}

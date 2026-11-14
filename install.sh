@@ -39,7 +39,60 @@ ensure_minecraft_account() {
     fi
 }
 
+install_dashboard() {
+    local source_dir=$1
+    local prefix=${MCCTL_DESTDIR:-}
+    local target=$prefix/usr/local/libexec/mcctl-dashboard
+    local config=$prefix/etc/default/mcctl-dashboard
+
+    install -d -m 0755 "$target/lib" "$target/public/fonts" "$target/public/vendor/skinview3d"
+    install -m 0644 "$source_dir/dashboard/server.mjs" "$target/server.mjs"
+    install -m 0644 "$source_dir/dashboard/lib/"*.mjs "$target/lib/"
+    install -m 0644 "$source_dir/dashboard/public/index.html" "$target/public/index.html"
+    install -m 0644 "$source_dir/dashboard/public/app.js" "$target/public/app.js"
+    install -m 0644 "$source_dir/dashboard/public/styles.css" "$target/public/styles.css"
+    install -m 0644 "$source_dir/dashboard/public/favicon.svg" "$target/public/favicon.svg"
+    install -m 0644 "$source_dir/dashboard/public/fonts/"* "$target/public/fonts/"
+    install -m 0644 "$source_dir/dashboard/public/vendor/skinview3d/"* "$target/public/vendor/skinview3d/"
+    install -m 0755 "$source_dir/dashboard/run" "$target/run"
+    install -d -m 0755 "$prefix/etc/systemd/system"
+    install -m 0644 "$source_dir/dashboard/mcctl-dashboard.service" "$prefix/etc/systemd/system/mcctl-dashboard.service"
+
+    if [[ -n $prefix ]]; then
+        install -d -m 0750 "$prefix/var/lib/mcctl-dashboard"
+    else
+        install -d -o minecraft -g minecraft -m 0750 /var/lib/mcctl-dashboard
+    fi
+    install -d -m 0755 "$prefix/etc/default"
+    if [[ ! -e $config ]]; then
+        install -m 0644 "$source_dir/dashboard/mcctl-dashboard.env.example" "$config"
+    else
+        echo "Warning: preserving existing $config." >&2
+    fi
+
+    echo "Dashboard installed but not started. Review /etc/default/mcctl-dashboard, then run:"
+    echo "  systemctl enable --now mcctl-dashboard.service"
+}
+
 main() {
+    local with_dashboard=false
+    while (($#)); do
+        case $1 in
+            --with-dashboard)
+                with_dashboard=true
+                ;;
+            --help|-h)
+                echo "Usage: sudo ./install.sh [--with-dashboard]"
+                return
+                ;;
+            *)
+                echo "Unknown installer option: $1" >&2
+                return 2
+                ;;
+        esac
+        shift
+    done
+
     if ((EUID != 0)); then
         echo "Run this installer as root: sudo ./install.sh" >&2
         exit 1
@@ -74,6 +127,9 @@ main() {
     install -d -m 0755 /etc/bash_completion.d
     install -m 0644 "$source_dir/completions/mcctl.bash" /etc/bash_completion.d/mcctl
 
+    if $with_dashboard; then
+        install_dashboard "$source_dir"
+    fi
     systemctl daemon-reload
     echo "mcctl installed. Open a new Bash shell or source /etc/bash_completion.d/mcctl."
 }

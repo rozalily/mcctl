@@ -68,3 +68,29 @@ test("creates a locked system account and group when absent", async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("stages the complete optional dashboard without system changes", async () => {
+  const destination = await mkdtemp(path.join(os.tmpdir(), "mcctl-dashboard-install-"));
+  try {
+    const result = spawnSync(
+      "bash",
+      ["--noprofile", "--norc", "-c", 'source "$1"; install_dashboard "$(dirname "$1")"', "bash", installer],
+      { encoding: "utf8", env: { ...process.env, MCCTL_DESTDIR: destination } },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    for (const filename of [
+      "usr/local/libexec/mcctl-dashboard/server.mjs",
+      "usr/local/libexec/mcctl-dashboard/lib/dashboard.mjs",
+      "usr/local/libexec/mcctl-dashboard/public/index.html",
+      "usr/local/libexec/mcctl-dashboard/public/vendor/skinview3d/skinview3d.bundle.js",
+      "etc/systemd/system/mcctl-dashboard.service",
+      "etc/default/mcctl-dashboard",
+    ]) {
+      assert.equal((await stat(path.join(destination, filename))).isFile(), true, filename);
+    }
+    assert.equal((await stat(path.join(destination, "usr/local/libexec/mcctl-dashboard/run"))).mode & 0o777, 0o755);
+    assert.equal((await stat(path.join(destination, "var/lib/mcctl-dashboard"))).mode & 0o777, 0o750);
+  } finally {
+    await rm(destination, { recursive: true, force: true });
+  }
+});

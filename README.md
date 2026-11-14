@@ -49,6 +49,23 @@ The installer places the CLI under `/usr/local/libexec/mcctl`, installs
 completion. Set `MCCTL_NODE=/absolute/path/to/node` when invoking `mcctl` if
 Node is not available on the normal shell `PATH`.
 
+### Optional Dashboard
+
+The repository includes a read-only dashboard that automatically discovers
+servers under `/srv/minecraft`. It is not installed by default.
+
+```bash
+sudo ./install.sh --with-dashboard
+sudoedit /etc/default/mcctl-dashboard
+sudo systemctl enable --now mcctl-dashboard.service
+```
+
+The dashboard binds to `127.0.0.1:3010` under `/status/`, records rolling
+history under `/var/lib/mcctl-dashboard`, and runs as the `minecraft` account.
+It should be exposed only through an authenticated reverse proxy. See
+`dashboard/README.md` for configuration, legacy-server support, and an nginx
+example.
+
 ## Usage
 
 ```bash
