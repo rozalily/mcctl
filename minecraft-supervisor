@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+instance=${1:-}
+if [[ ! "$instance" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+    echo "Invalid Minecraft instance name: $instance" >&2
+    exit 2
+fi
+
+server_dir="/srv/minecraft/$instance"
+runtime_dir="/run/minecraft-$instance"
+socket="$runtime_dir/tmux.sock"
+session="$instance"
+status_file="$runtime_dir/server-exit-status"
+
+if [[ ! -x "$server_dir/run" ]]; then
+    echo "Missing executable launcher: $server_dir/run" >&2
+    exit 2
+fi
+
+cleanup() {
+    /usr/bin/tmux -S "$socket" kill-server 2>/dev/null || true
+}
+
+trap cleanup EXIT
+trap 'exit 143' TERM INT
+
+rm -f "$status_file"
+/usr/bin/tmux -S "$socket" new-session -d \
+    -s "$session" \
+    -c "$server_dir" \
+    "exec /usr/local/libexec/minecraft-launch '$instance'"
+
+while /usr/bin/tmux -S "$socket" has-session -t "$session" 2>/dev/null; do
+    /usr/bin/sleep 1
+done
+
+if [[ -r "$status_file" ]]; then
+    read -r status < "$status_file"
+    if [[ "$status" =~ ^[0-9]+$ ]] && (( status <= 255 )); then
+        exit "$status"
+    fi
+fi
+
+exit 1

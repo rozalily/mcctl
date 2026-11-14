@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -u
+
+instance=${1:-}
+if [[ ! "$instance" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+    echo "Invalid Minecraft instance name: $instance" >&2
+    exit 2
+fi
+
+server_dir="/srv/minecraft/$instance"
+status_file="/run/minecraft-$instance/server-exit-status"
+cd "$server_dir" || exit 2
+./run
+status=$?
+printf '%s\n' "$status" > "$status_file"
+exit "$status"

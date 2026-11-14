@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+instance=${1:-}
+if [[ ! "$instance" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+    echo "Usage: minecraft-console <instance>" >&2
+    exit 2
+fi
+
+socket="/run/minecraft-$instance/tmux.sock"
+if ! sudo -u minecraft -H /usr/bin/tmux -S "$socket" has-session -t "$instance" 2>/dev/null; then
+    echo "Minecraft instance '$instance' is not running." >&2
+    exit 1
+fi
+
+exec sudo -u minecraft -H /usr/bin/tmux -S "$socket" attach-session -t "$instance"

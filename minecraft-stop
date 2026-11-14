@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+instance=${1:-}
+if [[ ! "$instance" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+    echo "Invalid Minecraft instance name: $instance" >&2
+    exit 2
+fi
+
+socket="/run/minecraft-$instance/tmux.sock"
+target="$instance:0.0"
+
+/usr/bin/tmux -S "$socket" has-session -t "$instance" 2>/dev/null || exit 0
+/usr/bin/tmux -S "$socket" send-keys -t "$target" -l 'save-all flush'
+/usr/bin/tmux -S "$socket" send-keys -t "$target" Enter
+/usr/bin/tmux -S "$socket" send-keys -t "$target" -l 'stop'
+/usr/bin/tmux -S "$socket" send-keys -t "$target" Enter
+
+for ((attempt = 0; attempt < 110; attempt++)); do
+    /usr/bin/tmux -S "$socket" has-session -t "$instance" 2>/dev/null || exit 0
+    /usr/bin/sleep 1
+done
+
+exit 1

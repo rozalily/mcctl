@@ -1,0 +1,18 @@
+{
+  "name": "mcctl",
+  "version": "0.1.0",
+  "description": "Minecraft server instance manager for Linux and systemd",
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rozalily/mcctl.git"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
