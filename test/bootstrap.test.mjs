@@ -42,7 +42,6 @@ test("downloads, validates, installs, and cleans a GitHub source archive", async
       env: {
         ...process.env,
         PATH: `${fakeBin}:${process.env.PATH}`,
-        MCCTL_ARCHIVE_URL: "https://example.test/mcctl.tar.gz",
         BOOTSTRAP_TEST_ARCHIVE: archive,
         BOOTSTRAP_CURL_ARGS: `${marker}.curl-args`,
         BOOTSTRAP_MARKER: marker,
@@ -55,7 +54,7 @@ test("downloads, validates, installs, and cleans a GitHub source archive", async
     assert.equal(await readFile(`${marker}.args`, "utf8"), "--with-dashboard\n");
     const curlArgs = await readFile(`${marker}.curl-args`, "utf8");
     assert.match(curlArgs, /--fail/);
-    assert.match(curlArgs, /https:\/\/example\.test\/mcctl\.tar\.gz/);
+    assert.match(curlArgs, /https:\/\/api\.github\.com\/repos\/rozalily\/mcctl\/tarball\/v0\.1\.0/);
     const extractedInstaller = (await readFile(`${marker}.source`, "utf8")).trim();
     await assert.rejects(stat(extractedInstaller));
   } finally {

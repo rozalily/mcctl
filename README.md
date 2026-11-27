@@ -7,8 +7,8 @@ systemd. It resolves Vanilla, Fabric, Forge, and NeoForge releases, verifies
 downloads, selects the required Java runtime, and creates isolated server
 directories under `/srv/minecraft`.
 
-The project is private and host-oriented for now. Its command and manifest
-formats may change before a public release.
+The project is early-stage and host-oriented. Its command and manifest formats
+may change before a 1.0 release.
 
 ## Features
 
@@ -43,15 +43,14 @@ individual instance directories remain owned by `minecraft`.
 
 ## Install
 
-Once the repository is public, install the latest `main` version with either
-download tool:
+Install release `v0.1.0` with either download tool:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/main/bootstrap.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash
 ```
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/rozalily/mcctl/main/bootstrap.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash
 ```
 
 The bootstrap downloads the source archive into a temporary directory, validates
@@ -59,12 +58,8 @@ the required installer files, runs `install.sh`, and removes the download. Pass
 `--with-dashboard` through Bash to include the optional dashboard:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/main/bootstrap.sh | sudo bash -s -- --with-dashboard
+curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash -s -- --with-dashboard
 ```
-
-While this repository remains private, GitHub requires authentication for both
-the bootstrap and source archive. A local clone remains the simplest private
-installation path.
 
 To install from a clone, review the scripts, then run:
 
@@ -204,6 +199,15 @@ bash -n mcctl install.sh completions/mcctl.bash minecraft-*
 
 Tests use Node's built-in test runner and deterministic HTTP/command fakes. No
 runtime npm dependencies are required.
+
+## Releases
+
+Releases use immutable `vMAJOR.MINOR.PATCH` tags. Version bumps are manual: update
+the versions in `package.json`, `dashboard/package.json`, and
+`dashboard/package-lock.json`; update the default ref in `bootstrap.sh`; and
+replace the pinned tag in the README install commands. Then run the full tests,
+commit those changes, create an annotated tag, and push both the commit and tag.
+Do not move an existing release tag.
 
 ## Roadmap
 

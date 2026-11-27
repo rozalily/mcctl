@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 repository=${MCCTL_REPOSITORY:-rozalily/mcctl}
-ref=${MCCTL_REF:-main}
+ref=${MCCTL_REF:-v0.1.0}
 archive_url=${MCCTL_ARCHIVE_URL:-https://api.github.com/repos/$repository/tarball/$ref}
 
 if [[ ! $repository =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then

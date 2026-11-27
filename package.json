@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Minecraft server instance manager for Linux and systemd",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rozalily/mcctl.git"
