@@ -12,17 +12,13 @@ may change before a 1.0 release.
 
 ## Features
 
-- Optional specs such as `latest-vanilla`, `latest-fabric`, and
-	`1.12.2-forge`
-- Pinned loader versions such as `1.21.1-neoforge@21.1.224`
-- Empty drafts for modpacks and custom launchers
-- Atomic staging, publisher SHA-1 verification, and recorded SHA-256 hashes
-- Exact Java-major detection without automatic package installation
-- Explicit EULA acceptance
-- Port-conflict, launcher, Java, and service health checks
-- Generic systemd/tmux supervision and console access
-- Optional per-instance direct Discord chat bridge
-- Bash completion for commands, options, specs, instances, and launch files
+- Downloads and configures specified Vanilla, Fabric, Forge, or NeoForge
+	versions, including pinned loader versions.
+- Adopts existing modpacks and custom launchers into managed instances.
+- Runs each server through a generic systemd/tmux service with console access,
+	health checks, and operational status.
+- Adds an optional per-instance Minecraft–Discord chat bridge.
+- Offers an optional read-only status dashboard with activity and player views.
 
 `mcctl` installs Minecraft and its loader only. It does not install arbitrary
 mods or modpacks.
@@ -43,7 +39,7 @@ individual instance directories remain owned by `minecraft`.
 
 ## Install
 
-Install release `v0.1.0` with either download tool:
+Install the core server manager from release `v0.1.0`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash
@@ -54,12 +50,7 @@ wget -qO- https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh |
 ```
 
 The bootstrap downloads the source archive into a temporary directory, validates
-the required installer files, runs `install.sh`, and removes the download. Pass
-`--with-dashboard` through Bash to include the optional dashboard:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash -s -- --with-dashboard
-```
+the required installer files, runs `install.sh`, and removes the download.
 
 To install from a clone, review the scripts, then run:
 
@@ -74,11 +65,11 @@ Node is not available on the normal shell `PATH`.
 
 ### Optional Dashboard
 
-The repository includes a read-only dashboard that automatically discovers
-servers under `/srv/minecraft`. It is not installed by default.
+The core installer does not install the dashboard. Add it later by rerunning the
+same tagged bootstrap with `--with-dashboard`, then configure and start it:
 
 ```bash
-sudo ./install.sh --with-dashboard
+curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash -s -- --with-dashboard
 sudoedit /etc/default/mcctl-dashboard
 sudo systemctl enable --now mcctl-dashboard.service
 ```
@@ -89,19 +80,13 @@ It should be exposed only through an authenticated reverse proxy. See
 `dashboard/README.md` for configuration, legacy-server support, and an nginx
 example.
 
+![Example mcctl dashboard showing server health, players, and recent activity](docs/images/dashboard.png)
+
 ## Usage
 
 ```bash
-# Empty directory for a modpack or custom setup
-mcctl create scratch
-
-# Resolve, verify, and configure server software
-mcctl create fabric-test latest-fabric --port 25566 --memory 4G
-mcctl create old-forge 1.12.2-forge --port 25567 --memory 4G
-mcctl create vanilla latest-vanilla --yes
-
-# Turn an empty draft into a managed instance
-mcctl adopt scratch --launch ./start.sh --port 25568
+# Download, verify, and configure a Fabric server
+mcctl create fabric-test 1.21.1-fabric --port 25566 --memory 4G
 
 # EULA acceptance is always explicit
 mcctl eula fabric-test --accept
@@ -109,53 +94,77 @@ mcctl doctor fabric-test
 mcctl enable fabric-test --now
 ```
 
+For a modpack or custom launcher, create an empty draft, place its files under
+`/srv/minecraft/fabric-test`, then adopt it:
+
+```bash
+mcctl create fabric-test
+mcctl adopt fabric-test --launch ./start.sh --port 25566 --memory 4G
+```
+
 ### Discord Chat Bridge
 
 The optional bridge directly connects an instance to one Discord text channel.
-It uses Discord REST polling and opens no inbound command port. Store the bot
-token in a private file, then enable and restart the instance:
+It uses Discord REST polling and opens no inbound command port.
+
+1. [Create a Discord application and bot](https://discord.com/developers/docs/quick-start/getting-started),
+   copy its bot token, and enable **Server Members Intent** on the Bot page.
+2. Invite the bot to your server with View Channel, Read Message History, and
+   Send Messages permissions.
+3. Enable Discord Developer Mode and
+   [copy the target channel ID](https://support.discord.com/hc/en-us/articles/206346498).
+4. Create a private token file and open it in your editor. Put the token alone
+	on one line, save, and close the editor:
 
 ```bash
-printf '%s\n' 'YOUR_DISCORD_BOT_TOKEN' > ~/mcctl-discord.token
-chmod 600 ~/mcctl-discord.token
+install -m 600 /dev/null ~/mcctl-discord.token
+${EDITOR:-vi} ~/mcctl-discord.token
+```
+
+The file should contain only:
+
+```text
+PASTE_YOUR_DISCORD_BOT_TOKEN_HERE
+```
+
+Configure the bridge using that file and the copied numeric channel ID:
+
+```bash
 mcctl bridge fabric-test --enable \
-	--channel DISCORD_CHANNEL_ID \
+	--channel 123456789012345678 \
 	--token-file ~/mcctl-discord.token \
 	--command-style tellraw
 rm -f ~/mcctl-discord.token
 mcctl restart fabric-test
 ```
 
-Command styles are per instance:
+Here, **modern** means Minecraft Java 1.7.2 or newer, where `/tellraw` exists;
+**legacy** means Java 1.7.1 or older, including Beta 1.7.3. Command styles are
+configured per instance:
 
-- `tellraw` targets modern servers and supports exact Discord role colors.
-- `say` targets an unmodified legacy server, with plain chat formatting.
-- `broadcast` targets legacy Bukkit servers; mcctl installs a console-only
-renderer plugin that displays Discord messages as direct `<display name> message`
-chat without Bukkit's pink `[Server]` prefix. Names use the closest legacy color
-to the member's highest colored Discord role; emoji, user mentions, role mentions,
-and channel mentions are rendered as readable text. Custom guild emoji aliases
-such as `:true:` are expanded for Discord. The renderer wraps long messages at
-word boundaries using legacy font widths, and displays attachments as compact
-`[filename]` labels instead of long CDN URLs. Minecraft `@username`, `@display name`,
-and `@server nickname` text pings unique matching Discord members; `@everyone`,
-`@here`, and role mentions remain disabled.
+- `tellraw` — modern servers, with exact Discord role colors and gradients.
+- `say` — unmodified legacy servers, with plain chat formatting.
+- `broadcast` — legacy Bukkit/CraftBukkit, with direct role-colored chat.
 
-Run `mcctl bridge NAME` to inspect the current configuration. Any bridge config
-change takes effect after `mcctl restart NAME`. Lifecycle messages are enabled by
-default; use `--no-announce` or `--announce` to change them. Disable relay without
-deleting its channel/token configuration with:
+The bridge also handles custom emoji, readable attachments, word wrapping on
+legacy clients, and individual Discord pings. Mass and role pings stay disabled.
+
+![Modern in-game chat with gradient display names and a highlighted mention](docs/images/chat-modern.png)
+
+*Modern `tellraw` formatting with enhanced role colors, emoji text, and a resolved mention.*
+
+Run `mcctl bridge fabric-test` to inspect the current configuration. Any bridge
+config change takes effect after `mcctl restart fabric-test`. Lifecycle messages
+are enabled by default; use `--no-announce` or `--announce` to change them.
+Disable relay without deleting its channel/token configuration with:
 
 ```bash
 mcctl bridge fabric-test --disable
 mcctl restart fabric-test
 ```
 
-The bot needs View Channel, Read Message History, and Send Messages permissions.
-Enable **Server Members Intent** on the bot's Discord Developer Portal page so
-mcctl can resolve display names, server nicknames, and highest-role colors. mcctl
-copies the token into `/etc/mcctl/bridges/NAME.token`; never place it directly on
-the command line or in an instance manifest.
+mcctl copies the token into `/etc/mcctl/bridges/fabric-test.token`; never place
+it directly on the command line or in an instance manifest.
 
 Useful operations:
 

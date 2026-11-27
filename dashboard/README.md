@@ -9,10 +9,10 @@ It is included in the repository but is not installed by default.
 
 ## Install
 
-From the repository root:
+Add the dashboard after the core `v0.1.0` installation:
 
 ```bash
-sudo ./install.sh --with-dashboard
+curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh | sudo bash -s -- --with-dashboard
 sudoedit /etc/default/mcctl-dashboard
 sudo systemctl enable --now mcctl-dashboard.service
 ```
