@@ -118,9 +118,15 @@ export class DiscordRestClient {
       .map((roleId) => context.roles.get(roleId))
       .filter((role) => (role?.colors?.primary_color ?? role?.color ?? 0) !== 0)
       .sort((left, right) => right.position - left.position)[0];
+    const roleColors = [
+      coloredRole?.colors?.primary_color ?? coloredRole?.color ?? 0,
+      coloredRole?.colors?.secondary_color,
+      coloredRole?.colors?.tertiary_color,
+    ].filter((color) => color != null && color !== 0);
     return {
       displayName: member.nick || message.author.global_name || message.author.username,
-      roleColor: coloredRole?.colors?.primary_color ?? coloredRole?.color ?? 0,
+      roleColor: roleColors[0] ?? 0,
+      roleColors,
       roles: context.roles,
       channels: context.channels,
     };
