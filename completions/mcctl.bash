@@ -1,12 +1,22 @@
-_mcctl_commands="create adopt resolve doctor list eula enable disable start stop restart status console help"
+_mcctl_commands="create adopt resolve doctor bridge list eula enable disable start stop restart status console help"
 _mcctl_specs="latest-vanilla latest-fabric latest-forge latest-neoforge"
 
 _mcctl_instances() {
     local root=${MCCTL_ROOT:-/srv/minecraft}
-    local directory
+    local manifest_root=${MCCTL_MANIFEST_ROOT:-}
+    local directory name
+    if [[ -z $manifest_root ]]; then
+        if [[ $root == /srv/minecraft ]]; then
+            manifest_root=/etc/mcctl/instances
+        else
+            manifest_root=$root/.mcctl-manifests
+        fi
+    fi
     for directory in "$root"/*/; do
         [[ -d $directory ]] || continue
-        basename "$directory"
+        name=${directory%/}
+        name=${name##*/}
+        [[ -f $manifest_root/$name.json ]] && printf '%s\n' "$name"
     done
 }
 
@@ -32,10 +42,10 @@ _mcctl_positionals() {
             continue
         fi
         case $word in
-            --spec|--port|--memory|--java|--launch|--arg)
+            --spec|--port|--memory|--java|--launch|--arg|--channel|--token-file|--command-style)
                 skip=true
                 ;;
-            --spec=*|--port=*|--memory=*|--java=*|--launch=*|--arg=*|--*)
+            --spec=*|--port=*|--memory=*|--java=*|--launch=*|--arg=*|--channel=*|--token-file=*|--command-style=*|--*)
                 ;;
             *)
                 MCCTL_POSITIONALS+=("$word")
@@ -95,7 +105,7 @@ _mcctl() {
             COMPREPLY=( $(compgen -W "1G 2G 4G 6G 8G 12G 16G" -- "$current") )
             return
             ;;
-        --java)
+        --java|--token-file)
             if declare -F _filedir >/dev/null; then
                 _filedir
             else
@@ -108,6 +118,13 @@ _mcctl() {
             return
             ;;
         --port|--arg)
+            return
+            ;;
+        --channel)
+            return
+            ;;
+        --command-style)
+            COMPREPLY=( $(compgen -W "tellraw say broadcast" -- "$current") )
             return
             ;;
     esac
@@ -131,6 +148,14 @@ _mcctl() {
             ;;
         resolve)
             ((${#MCCTL_POSITIONALS[@]} == 0)) && _mcctl_spec_completions "$current"
+            ;;
+        bridge)
+            options="--enable --disable --channel --token-file --command-style --announce --no-announce"
+            if [[ $current == --* ]]; then
+                COMPREPLY=( $(compgen -W "$options" -- "$current") )
+            elif ((${#MCCTL_POSITIONALS[@]} == 0)); then
+                COMPREPLY=( $(compgen -W "$(_mcctl_instances)" -- "$current") )
+            fi
             ;;
         eula)
             if [[ $current == --* ]]; then

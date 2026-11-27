@@ -1,0 +1,8 @@
+name: McctlBridgeRenderer
+version: '1.0.0'
+main: dev.mcctl.bridge.McctlBridgeRenderer
+description: Renders mcctl Discord relay messages through Bukkit.
+commands:
+  mcctlrelay:
+    description: Broadcasts a formatted mcctl bridge message.
+    usage: /<command> <message>

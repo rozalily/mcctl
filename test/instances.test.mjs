@@ -11,6 +11,8 @@ import {
   createEmptyInstance,
   createResolvedInstance,
   doctorInstance,
+  findJava,
+  manifestRootFor,
   readManifest,
   setEula,
   setServerProperty,
@@ -44,6 +46,18 @@ test("builds safely quoted launch scripts", () => {
   assert.match(buildAdoptedRunScript("./start.sh", ["--nogui"]), /\/bin\/bash.*\.\/start\.sh.*--nogui/);
 });
 
+test("probes configured Java paths through the minecraft account", async () => {
+  const javaPath = "/srv/minecraft/example/untrusted-java";
+  const detected = await findJava(21, javaPath, {
+    runCommand: async (command, args) => {
+      assert.equal(command, "/usr/sbin/runuser");
+      assert.deepEqual(args, ["--user", "minecraft", "--", javaPath, "-version"]);
+      return { stdout: "", stderr: 'openjdk version "21.0.5"\n' };
+    },
+  });
+  assert.equal(detected, javaPath);
+});
+
 test("creates an empty draft and adopts a manual setup", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "mcctl-empty-"));
   try {
@@ -52,6 +66,8 @@ test("creates an empty draft and adopts a manual setup", async () => {
     assert.equal(created.manifest.port, null);
     assert.equal((await stat(created.directory)).mode & 0o777, 0o750);
     await assert.rejects(stat(path.join(root, "scratch", "run")));
+    await assert.rejects(stat(path.join(root, "scratch", "instance.json")));
+    assert.equal((await stat(path.join(manifestRootFor(root), "scratch.json"))).isFile(), true);
 
     await writeFile(path.join(root, "scratch", "start.sh"), "#!/bin/sh\nexit 0\n", { mode: 0o750 });
     const adopted = await adoptInstance({
@@ -240,6 +256,25 @@ test("doctor reports incomplete drafts without touching services", async () => {
     await writeFile(path.join(root, "draft", "run"), "#!/bin/sh\n", { mode: 0o640 });
     const nonExecutable = await doctorInstance({ root, name: "draft" });
     assert.equal(nonExecutable.checks.find((check) => check.name === "launcher").ok, false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("doctor rejects malformed mcctl manifests", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "mcctl-doctor-malformed-"));
+  try {
+    await createEmptyInstance({ root, name: "malformed", owner: null });
+    const directory = path.join(root, "malformed");
+    await writeFile(path.join(manifestRootFor(root), "malformed.json"), "{\n");
+    await writeFile(path.join(directory, "run"), "#!/bin/sh\n", { mode: 0o750 });
+    await writeFile(path.join(directory, "eula.txt"), "eula=true\n");
+
+    const report = await doctorInstance({ root, name: "malformed" });
+    const manifestCheck = report.checks.find((check) => check.name === "manifest");
+    assert.equal(report.ok, false);
+    assert.equal(manifestCheck.ok, false);
+    assert.equal(manifestCheck.severity, "error");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

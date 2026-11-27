@@ -7,6 +7,7 @@ import { collectPlayerProfiles } from "./player-profiles.mjs";
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_ROOT = "/srv/minecraft";
+const DEFAULT_MANIFEST_ROOT = "/etc/mcctl/instances";
 const MAX_LOG_BYTES = 768 * 1024;
 const INSTANCE_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const legacyPlayerCaches = new Map();
@@ -58,25 +59,32 @@ async function fileExists(filename) {
   }
 }
 
-export async function discoverServers(root = DEFAULT_ROOT, { legacyInstances = [] } = {}) {
-  const legacyIds = new Set(legacyInstances);
+export async function discoverServers(root = DEFAULT_ROOT, { manifestRoot = DEFAULT_MANIFEST_ROOT } = {}) {
   const entries = await fs.readdir(root, { withFileTypes: true });
   const servers = [];
   for (const entry of entries) {
     if (!entry.isDirectory() || !INSTANCE_PATTERN.test(entry.name)) continue;
     const directory = path.join(root, entry.name);
+    const manifestPath = path.join(manifestRoot, `${entry.name}.json`);
     const propertiesPath = path.join(directory, "server.properties");
-    if (!(await fileExists(propertiesPath))) continue;
+    if (!(await fileExists(manifestPath)) || !(await fileExists(propertiesPath))) continue;
+    try {
+      JSON.parse(await fs.readFile(manifestPath, "utf8"));
+    } catch {
+      continue;
+    }
 
     const properties = parseProperties(await fs.readFile(propertiesPath, "utf8"));
     const modernLog = path.join(directory, "logs", "latest.log");
     const legacyLog = path.join(directory, "server.log");
-    const logPath = (await fileExists(modernLog)) ? modernLog : (await fileExists(legacyLog)) ? legacyLog : null;
+    const hasModernLog = await fileExists(modernLog);
+    const hasLegacyLog = await fileExists(legacyLog);
+    const logPath = hasModernLog ? modernLog : hasLegacyLog ? legacyLog : null;
     const iconPath = path.join(directory, "server-icon.png");
     const hasIcon = await fileExists(iconPath);
     const iconVersion = hasIcon ? Math.trunc((await fs.stat(iconPath)).mtimeMs) : null;
     const port = Number.parseInt(properties["server-port"] || "25565", 10);
-    const legacyPing = legacyIds.has(entry.name);
+    const legacyPing = !hasModernLog && hasLegacyLog;
 
     servers.push({
       id: entry.name,
@@ -84,7 +92,7 @@ export async function discoverServers(root = DEFAULT_ROOT, { legacyInstances = [
       directory,
       properties,
       port: Number.isInteger(port) ? port : 25565,
-      service: legacyPing ? `${entry.name}.service` : `minecraft@${entry.name}.service`,
+      service: `minecraft@${entry.name}.service`,
       logPath,
       hasIcon,
       iconPath,
@@ -509,11 +517,11 @@ export async function queryMinecraftStatus(port, legacyPreferred = false) {
 
 export async function collectDashboardData({
   root = DEFAULT_ROOT,
+  manifestRoot = DEFAULT_MANIFEST_ROOT,
   publicHost = "localhost",
   basePath = "/status",
-  legacyInstances = [],
 } = {}) {
-  const discovered = await discoverServers(root, { legacyInstances });
+  const discovered = await discoverServers(root, { manifestRoot });
   const records = await Promise.all(
     discovered.map(async (server) => {
       const [service, activity] = await Promise.all([

@@ -37,8 +37,13 @@ test("completes existing instances and launch files", async () => {
   try {
     await mkdir(path.join(root, "alpha"));
     await mkdir(path.join(root, "bravo"));
+    await mkdir(path.join(root, ".mcctl-manifests"));
+    await writeFile(path.join(root, ".mcctl-manifests", "alpha.json"), "{}\n");
     await writeFile(path.join(root, "alpha", "start.sh"), "#!/bin/sh\n");
     assert.deepEqual(complete(["mcctl", "status", "a"], { MCCTL_ROOT: root }), ["alpha"]);
+    assert.deepEqual(complete(["mcctl", "bridge", "a"], { MCCTL_ROOT: root }), ["alpha"]);
+    assert.deepEqual(complete(["mcctl", "bridge", "alpha", "--command-style", "s"], { MCCTL_ROOT: root }), ["say"]);
+    assert.deepEqual(complete(["mcctl", "bridge", "alpha", "--en"], { MCCTL_ROOT: root }), ["--enable"]);
     assert.deepEqual(
       complete(["mcctl", "adopt", "alpha", "--launch", "./s"], { MCCTL_ROOT: root }),
       ["./start.sh"],

@@ -100,21 +100,37 @@ main() {
 
     local source_dir
     source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+    local node_bin=${MCCTL_NODE:-}
+    if [[ -z $node_bin ]]; then
+        node_bin=$(command -v node || true)
+    fi
+    local node_major
+    node_major=$([[ -x $node_bin ]] && "$node_bin" -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || true)
+    if [[ -z $node_major || $node_major -lt 22 ]]; then
+        echo "Node.js 22 or newer is required; run with MCCTL_NODE=/absolute/path/to/node." >&2
+        exit 1
+    fi
 
+    local required
+    for required in /usr/bin/tmux /usr/bin/sudo /usr/sbin/runuser /usr/bin/tee /usr/bin/chmod /usr/bin/mv /usr/bin/rm; do
+        if [[ ! -x $required ]]; then
+            echo "Missing required executable: $required" >&2
+            exit 1
+        fi
+    done
     ensure_minecraft_account
-    if [[ ! -x /usr/bin/tmux ]]; then
-        echo "Missing /usr/bin/tmux; install tmux before installing mcctl." >&2
-        exit 1
-    fi
-    if [[ ! -x /usr/bin/sudo ]]; then
-        echo "Missing /usr/bin/sudo; install sudo before installing mcctl." >&2
-        exit 1
-    fi
 
-    install -d -m 0755 /usr/local/libexec/mcctl/lib
+    install -d -m 0755 /usr/local/libexec/mcctl/lib /usr/local/libexec/mcctl/bridge /usr/local/libexec/mcctl/bridge/renderer
     install -m 0644 "$source_dir/mcctl.mjs" /usr/local/libexec/mcctl/mcctl.mjs
+    install -m 0644 "$source_dir/lib/bridge-config.mjs" /usr/local/libexec/mcctl/lib/bridge-config.mjs
     install -m 0644 "$source_dir/lib/instances.mjs" /usr/local/libexec/mcctl/lib/instances.mjs
+    install -m 0644 "$source_dir/lib/minecraft-status.mjs" /usr/local/libexec/mcctl/lib/minecraft-status.mjs
     install -m 0644 "$source_dir/lib/specs.mjs" /usr/local/libexec/mcctl/lib/specs.mjs
+    install -m 0644 "$source_dir/bridge/"*.mjs /usr/local/libexec/mcctl/bridge/
+    install -m 0644 "$source_dir/bridge/renderer/mcctl-bridge-renderer.jar" /usr/local/libexec/mcctl/bridge/renderer/
+    if [[ ! -x /usr/local/libexec/mcctl/node ]] || ! cmp -s "$node_bin" /usr/local/libexec/mcctl/node; then
+        install -m 0755 "$node_bin" /usr/local/libexec/mcctl/node
+    fi
     install -m 0755 "$source_dir/mcctl" /usr/local/bin/mcctl
 
     install -m 0755 "$source_dir/minecraft-supervisor" /usr/local/libexec/minecraft-supervisor
@@ -123,7 +139,10 @@ main() {
     install -m 0755 "$source_dir/minecraft-console" /usr/local/bin/minecraft-console
     install -m 0644 "$source_dir/minecraft@.service" /etc/systemd/system/minecraft@.service
 
-    install -d -o minecraft -g minecraft -m 0750 /srv/minecraft
+    install -d -o root -g minecraft -m 0750 /srv/minecraft
+    install -d -o root -g root -m 0755 /etc/mcctl
+    install -d -o root -g minecraft -m 2750 /etc/mcctl/instances
+    install -d -o root -g minecraft -m 2750 /etc/mcctl/bridges
     install -d -m 0755 /etc/bash_completion.d
     install -m 0644 "$source_dir/completions/mcctl.bash" /etc/bash_completion.d/mcctl
 

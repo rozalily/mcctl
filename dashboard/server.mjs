@@ -12,8 +12,8 @@ const host = process.env.HOST || "127.0.0.1";
 const port = Number.parseInt(process.env.PORT || "3010", 10);
 const basePath = (process.env.BASE_PATH || "/status").replace(/\/$/, "");
 const minecraftRoot = process.env.MINECRAFT_ROOT || "/srv/minecraft";
+const manifestRoot = process.env.MANIFEST_ROOT || "/etc/mcctl/instances";
 const publicHost = process.env.PUBLIC_HOST || "localhost";
-const legacyInstances = (process.env.LEGACY_INSTANCES || "").split(",").map((value) => value.trim()).filter(isValidInstanceId);
 const historyFile = process.env.HISTORY_FILE || path.join(directory, "data", "history.json");
 const skinCacheDirectory = process.env.SKIN_CACHE_DIRECTORY || path.join(directory, "data", "skins");
 const cacheDurationMs = 5_000;
@@ -59,7 +59,7 @@ function sendJson(response, status, value) {
 async function getDashboardData() {
   if (cache && Date.now() < cacheExpiresAt) return cache;
   if (!pendingCollection) {
-    pendingCollection = collectDashboardData({ root: minecraftRoot, publicHost, basePath, legacyInstances })
+    pendingCollection = collectDashboardData({ root: minecraftRoot, manifestRoot, publicHost, basePath })
       .then((value) => {
         cache = value;
         cacheExpiresAt = Date.now() + cacheDurationMs;

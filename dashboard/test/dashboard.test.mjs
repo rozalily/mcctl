@@ -14,18 +14,30 @@ import {
   readLegacyPlayerState,
 } from "../lib/dashboard.mjs";
 
-test("discovers generic and configured legacy services", async () => {
+test("discovers managed services and infers legacy log handling", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "minecraft-discovery-"));
+  const manifestRoot = path.join(root, "manifests");
   try {
+    await mkdir(manifestRoot);
     for (const name of ["modern", "legacy"]) {
       await mkdir(path.join(root, name));
       await writeFile(path.join(root, name, "server.properties"), `server-port=${name === "modern" ? 25565 : 25566}\n`);
+      await writeFile(path.join(manifestRoot, `${name}.json`), `${JSON.stringify({ state: "adopted" })}\n`);
     }
-    const servers = await discoverServers(root, { legacyInstances: ["legacy"] });
+    await mkdir(path.join(root, "modern", "logs"));
+    await writeFile(path.join(root, "modern", "logs", "latest.log"), "");
+    await writeFile(path.join(root, "legacy", "server.log"), "");
+    await mkdir(path.join(root, "external"));
+    await writeFile(path.join(root, "external", "server.properties"), "server-port=25567\n");
+    await mkdir(path.join(root, "malformed"));
+    await writeFile(path.join(root, "malformed", "server.properties"), "server-port=25568\n");
+    await writeFile(path.join(manifestRoot, "malformed.json"), "{\n");
+
+    const servers = await discoverServers(root, { manifestRoot });
     assert.deepEqual(
       servers.map(({ id, service, legacyPing }) => ({ id, service, legacyPing })),
       [
-        { id: "legacy", service: "legacy.service", legacyPing: true },
+        { id: "legacy", service: "minecraft@legacy.service", legacyPing: true },
         { id: "modern", service: "minecraft@modern.service", legacyPing: false },
       ],
     );

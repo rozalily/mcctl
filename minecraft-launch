@@ -7,10 +7,18 @@ if [[ ! "$instance" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
     exit 2
 fi
 
-server_dir="/srv/minecraft/$instance"
-status_file="/run/minecraft-$instance/server-exit-status"
+server_root=${MCCTL_ROOT:-/srv/minecraft}
+bridge_root=${MCCTL_BRIDGE_ROOT:-/etc/mcctl/bridges}
+runtime_dir=${MCCTL_RUNTIME_DIR:-/usr/local/libexec/mcctl}
+run_root=${MCCTL_RUN_ROOT:-/run}
+server_dir="$server_root/$instance"
+status_file="$run_root/minecraft-$instance/server-exit-status"
 cd "$server_dir" || exit 2
-./run
+if [[ -f $bridge_root/$instance.enabled ]]; then
+    "$runtime_dir/node" "$runtime_dir/bridge/launch.mjs" "$instance"
+else
+    ./run
+fi
 status=$?
 printf '%s\n' "$status" > "$status_file"
 exit "$status"

@@ -32,14 +32,15 @@ upgrades.
 | `PORT` | `3010` | HTTP port |
 | `BASE_PATH` | `/status` | URL prefix |
 | `MINECRAFT_ROOT` | `/srv/minecraft` | Instance root |
+| `MANIFEST_ROOT` | `/etc/mcctl/instances` | Trusted mcctl instance metadata |
 | `PUBLIC_HOST` | `localhost` | Address displayed for players |
 | `HISTORY_FILE` | `/var/lib/mcctl-dashboard/history.json` | Rolling history file |
 | `SKIN_CACHE_DIRECTORY` | `/var/lib/mcctl-dashboard/skins` | Private skin cache |
-| `LEGACY_INSTANCES` | empty | Comma-separated legacy instances using standalone `<name>.service` units |
 | `MCCTL_NODE` | auto-detected | Absolute Node.js 22+ path when not on system PATH |
 
-For a legacy instance named `classic`, set `LEGACY_INSTANCES=classic`. Modern
-instances use `minecraft@<name>.service` automatically.
+The dashboard discovers only managed directories with valid metadata in
+`MANIFEST_ROOT` and uses `minecraft@<name>.service`. Older Minecraft versions
+with `server.log` are detected automatically for log-based player state.
 
 ## Reverse Proxy
 
