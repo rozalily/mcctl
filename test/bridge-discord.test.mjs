@@ -79,7 +79,13 @@ test("resolves member display names and highest colored roles", async () => {
       if (url.endsWith("/guilds/456/roles")) {
         return jsonResponse([
           { id: "1", name: "Lower", color: 0xff5555, position: 2 },
-          { id: "2", name: "Higher", color: 0xf1c40f, position: 4 },
+          {
+            id: "2",
+            name: "Higher",
+            color: 0xf1c40f,
+            colors: { primary_color: 0xf1c40f, secondary_color: 0x9b59b6, tertiary_color: null },
+            position: 4,
+          },
         ]);
       }
       if (url.endsWith("/guilds/456/channels")) return jsonResponse([{ id: "123", name: "server-chat" }]);
@@ -90,6 +96,7 @@ test("resolves member display names and highest colored roles", async () => {
   const presentation = await client.messagePresentation({ author: { id: "789", username: "User" } });
   assert.equal(presentation.displayName, "Display");
   assert.equal(presentation.roleColor, 0xf1c40f);
+  assert.deepEqual(presentation.roleColors, [0xf1c40f, 0x9b59b6]);
   assert.equal(presentation.roles.get("1").name, "Lower");
   assert.equal(presentation.channels.get("123"), "server-chat");
 });

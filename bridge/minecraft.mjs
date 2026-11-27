@@ -107,6 +107,26 @@ function nearestMinecraftColor(rgb) {
   ).code;
 }
 
+function gradientComponents(text, colorStops) {
+  const colors = colorStops.filter((color) => Number.isInteger(color) && color > 0);
+  const characters = [...text];
+  const toHex = (color) => `#${color.toString(16).padStart(6, "0")}`;
+  if (colors.length === 0) return [{ text, color: "white" }];
+  if (colors.length === 1 || characters.length === 1) return [{ text, color: toHex(colors[0]) }];
+  return characters.map((character, index) => {
+    const scaled = (index / (characters.length - 1)) * (colors.length - 1);
+    const segment = Math.min(Math.floor(scaled), colors.length - 2);
+    const progress = scaled - segment;
+    const start = colors[segment];
+    const end = colors[segment + 1];
+    const interpolate = (left, right) => Math.round(left + (right - left) * progress);
+    const red = interpolate((start >> 16) & 0xff, (end >> 16) & 0xff);
+    const green = interpolate((start >> 8) & 0xff, (end >> 8) & 0xff);
+    const blue = interpolate(start & 0xff, end & 0xff);
+    return { text: character, color: `#${red.toString(16).padStart(2, "0")}${green.toString(16).padStart(2, "0")}${blue.toString(16).padStart(2, "0")}` };
+  });
+}
+
 function discordDisplayContent(message, presentation, legacyColors = false) {
   const color = (value, code) => (legacyColors ? `§${code}${value}§f` : value);
   let content = stripMinecraftFormatting(cleanDiscordText(String(message.content || ""))).replace(
@@ -158,11 +178,12 @@ export function discordMessageToCommand(message, { style = "tellraw", presentati
     return `say ${prefix}${body.slice(0, Math.max(0, MAX_BETA_MESSAGE_LENGTH - prefix.length))}`;
   }
   if (style !== "tellraw") throw new Error(`Unsupported MINECRAFT_COMMAND_STYLE: ${style}`);
+  const roleColors = presentation?.roleColors?.length ? presentation.roleColors : [presentation?.roleColor].filter(Boolean);
   const component = {
     text: "",
     extra: [
       { text: "<", color: "white" },
-      { text: name, color: presentation?.roleColor ? `#${presentation.roleColor.toString(16).padStart(6, "0")}` : "white" },
+      ...gradientComponents(name, roleColors),
       { text: "> ", color: "white" },
       { text: body, color: "white" },
     ],

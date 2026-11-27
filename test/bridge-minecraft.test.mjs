@@ -74,6 +74,20 @@ test("formats Discord messages as one safe tellraw command", () => {
   assert.equal(discordMessageToCommand({ webhook_id: "1", author: { username: "Hook" }, content: "ignored" }), null);
 });
 
+test("interpolates enhanced Discord role colors across modern display names", () => {
+  const command = discordMessageToCommand(
+    { author: { username: "User", bot: false }, content: "gradient", attachments: [] },
+    { presentation: { displayName: "ABC", roleColor: 0xff0000, roleColors: [0xff0000, 0x0000ff] } },
+  );
+  const component = JSON.parse(command.slice("tellraw @a ".length));
+  assert.deepEqual(component.extra.slice(1, 4), [
+    { text: "A", color: "#ff0000" },
+    { text: "B", color: "#800080" },
+    { text: "C", color: "#0000ff" },
+  ]);
+  assert.deepEqual(component.extra[4], { text: "> ", color: "white" });
+});
+
 test("formats Beta Discord messages as bounded say commands", () => {
   const command = discordMessageToCommand(
     {
