@@ -142,12 +142,16 @@ Here, **modern** means Minecraft Java 1.7.2 or newer, where `/tellraw` exists;
 **legacy** means Java 1.7.1 or older, including Beta 1.7.3. Command styles are
 configured per instance:
 
-- `tellraw` — modern servers, with exact Discord role colors.
+- `tellraw` — modern servers, with exact Discord role colors and gradients.
 - `say` — unmodified legacy servers, with plain chat formatting.
 - `broadcast` — legacy Bukkit/CraftBukkit, with direct role-colored chat.
 
 The bridge also handles custom emoji, readable attachments, word wrapping on
 legacy clients, and individual Discord pings. Mass and role pings stay disabled.
+
+![Modern in-game chat with gradient display names and a highlighted mention](docs/images/chat-modern.png)
+
+*Modern `tellraw` formatting with enhanced role colors, emoji text, and a resolved mention.*
 
 Run `mcctl bridge fabric-test` to inspect the current configuration. Any bridge
 config change takes effect after `mcctl restart fabric-test`. Lifecycle messages
