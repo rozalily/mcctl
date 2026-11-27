@@ -1,0 +1,30 @@
+name: Public installer smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Install host prerequisite
+        run: sudo apt-get update && sudo apt-get install --yes tmux
+      - name: Run tagged public bootstrap
+        run: |
+          node_bin=$(command -v node)
+          curl -fsSL https://raw.githubusercontent.com/rozalily/mcctl/v0.1.0/bootstrap.sh |
+            sudo env MCCTL_NODE="$node_bin" bash
+      - name: Verify installation
+        run: |
+          sudo test -x /usr/local/bin/mcctl
+          sudo test -x /usr/local/libexec/mcctl/node
+          sudo /usr/local/libexec/mcctl/node --version | grep '^v24\.'
+          sudo /usr/local/libexec/mcctl/node /usr/local/libexec/mcctl/mcctl.mjs help | grep 'Minecraft server instance manager'
+          systemctl cat minecraft@.service >/dev/null
+          getent passwd minecraft >/dev/null
