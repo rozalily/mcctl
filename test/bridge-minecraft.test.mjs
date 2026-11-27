@@ -88,6 +88,40 @@ test("interpolates enhanced Discord role colors across modern display names", ()
   assert.deepEqual(component.extra[4], { text: "> ", color: "white" });
 });
 
+test("highlights modern user, role, channel, and mass mentions", () => {
+  const command = discordMessageToCommand(
+    {
+      author: { username: "User", bot: false },
+      content: "hi <@10> <@&20> in <#30> @everyone",
+      mentions: [{ id: "10", username: "dayl_ily", global_name: "daylily" }],
+      mention_roles: ["20"],
+      attachments: [],
+    },
+    {
+      presentation: {
+        displayName: "Roza",
+        roleColor: 0xff0000,
+        roles: new Map([["20", { id: "20", name: "Builders", color: 0xff8800 }]]),
+        channels: new Map([["30", "screenshots"]]),
+      },
+    },
+  );
+  const component = JSON.parse(command.slice("tellraw @a ".length));
+  assert.deepEqual(
+    component.extra.slice(3),
+    [
+      { text: "hi ", color: "white" },
+      { text: "@daylily", color: "blue" },
+      { text: " ", color: "white" },
+      { text: "@Builders", color: "#ff8800" },
+      { text: " in ", color: "white" },
+      { text: "#screenshots", color: "blue" },
+      { text: " ", color: "white" },
+      { text: "@everyone", color: "blue" },
+    ],
+  );
+});
+
 test("formats Beta Discord messages as bounded say commands", () => {
   const command = discordMessageToCommand(
     {

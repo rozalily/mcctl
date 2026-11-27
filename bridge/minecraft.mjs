@@ -152,6 +152,54 @@ function discordDisplayContent(message, presentation, legacyColors = false) {
   return content;
 }
 
+function applyComponentPattern(components, pattern, handler) {
+  const result = [];
+  for (const component of components) {
+    if (Object.keys(component).length > 1) {
+      result.push(component);
+      continue;
+    }
+    const expression = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+    let lastIndex = 0;
+    let match;
+    while ((match = expression.exec(component.text)) !== null) {
+      if (match.index > lastIndex) result.push({ text: component.text.slice(lastIndex, match.index) });
+      result.push(handler(match[0], ...match.slice(1)));
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < component.text.length) result.push({ text: component.text.slice(lastIndex) });
+  }
+  return result;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function modernBodyComponents(body, message, presentation) {
+  let components = [{ text: body }];
+  for (const mention of message.mentions || []) {
+    const name = mention.member?.nick || mention.global_name || mention.username || mention.id;
+    const display = `@${stripMinecraftFormatting(cleanDiscordText(name))}`;
+    components = applyComponentPattern(components, new RegExp(escapeRegExp(display), "g"), (match) => ({ text: match, color: "blue" }));
+  }
+  for (const roleId of message.mention_roles || []) {
+    const role = presentation?.roles?.get(roleId);
+    if (!role) continue;
+    const display = `@${stripMinecraftFormatting(cleanDiscordText(role.name))}`;
+    const roleColor = role.colors?.primary_color ?? role.color ?? 0;
+    const color = roleColor ? `#${roleColor.toString(16).padStart(6, "0")}` : "white";
+    components = applyComponentPattern(components, new RegExp(escapeRegExp(display), "g"), (match) => ({ text: match, color }));
+  }
+  for (const [channelId, channelName] of presentation?.channels || []) {
+    if (!message.content?.includes(`<#${channelId}>`)) continue;
+    const display = `#${stripMinecraftFormatting(cleanDiscordText(channelName))}`;
+    components = applyComponentPattern(components, new RegExp(escapeRegExp(display), "g"), (match) => ({ text: match, color: "blue" }));
+  }
+  components = applyComponentPattern(components, /@(everyone|here)\b/g, (match) => ({ text: match, color: "blue" }));
+  return components.map((component) => (Object.keys(component).length === 1 ? { ...component, color: "white" } : component));
+}
+
 export function discordMessageToCommand(message, { style = "tellraw", presentation = null } = {}) {
   if (!message || message.webhook_id || message.author?.bot) return null;
   const attachments = Array.isArray(message.attachments)
@@ -185,7 +233,7 @@ export function discordMessageToCommand(message, { style = "tellraw", presentati
       { text: "<", color: "white" },
       ...gradientComponents(name, roleColors),
       { text: "> ", color: "white" },
-      { text: body, color: "white" },
+      ...modernBodyComponents(body, message, presentation),
     ],
   };
   return `tellraw @a ${JSON.stringify(component)}`;
