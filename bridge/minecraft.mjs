@@ -52,13 +52,13 @@ export function parseMinecraftEvent(line) {
   const presence = /^([^\s]{1,32}) (?:(joined|left) the game|has (left) the game\.?)$/.exec(payload);
   if (presence) {
     const action = presence[2] || presence[3];
-    return { type: action, content: `*${cleanDiscordText(presence[1])} ${action} the game.*` };
+    return { type: action, content: `-# ${cleanDiscordText(presence[1])} ${action} the game.` };
   }
 
   const legacyLogin = /^([A-Za-z0-9_]{1,32}) \[\/[^\]]+\] logged in with entity id /.exec(payload);
-  if (legacyLogin) return { type: "joined", content: `*${legacyLogin[1]} joined the game.*` };
+  if (legacyLogin) return { type: "joined", content: `-# ${legacyLogin[1]} joined the game.` };
   const legacyDisconnect = /^([A-Za-z0-9_]{1,32}) lost connection(?::.*)?$/.exec(payload);
-  if (legacyDisconnect) return { type: "left", content: `*${legacyDisconnect[1]} left the game.*` };
+  if (legacyDisconnect) return { type: "left", content: `-# ${legacyDisconnect[1]} left the game.` };
 
   const advancement = /^([^\s]{1,32}) has (made the advancement|completed the challenge|reached the goal) \[(.+)\]$/.exec(payload);
   if (advancement) {
