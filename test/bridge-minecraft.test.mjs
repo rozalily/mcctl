@@ -11,7 +11,7 @@ test("parses relevant Minecraft console events", () => {
   });
   assert.deepEqual(parseMinecraftEvent("[27Nov2026 12:00:00.000] [Server thread/INFO] [minecraft/MinecraftServer]: Beta joined the game"), {
     type: "joined",
-    content: "*Beta joined the game.*",
+    content: "-# Beta joined the game.",
   });
   assert.deepEqual(parseMinecraftEvent("[12:00:00] [Server thread/INFO]: Alpha has made the advancement [Stone Age]"), {
     type: "advancement",
@@ -27,11 +27,11 @@ test("parses relevant Minecraft console events", () => {
   });
   assert.deepEqual(
     parseMinecraftEvent("2026-11-27 12:00:01 [INFO] BetaPlayer [/127.0.0.1:1234] logged in with entity id 3 at ([world] 0, 64, 0)"),
-    { type: "joined", content: "*BetaPlayer joined the game.*" },
+    { type: "joined", content: "-# BetaPlayer joined the game." },
   );
   assert.deepEqual(parseMinecraftEvent("2026-11-27 12:00:02 [INFO] BetaPlayer lost connection: disconnect.endOfStream"), {
     type: "left",
-    content: "*BetaPlayer left the game.*",
+    content: "-# BetaPlayer left the game.",
   });
   assert.equal(parseMinecraftEvent("[12:00:00] [Server thread/INFO]: Saving chunks"), null);
 });
